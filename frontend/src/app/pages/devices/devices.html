@@ -1,0 +1,38 @@
+<h1>Prueba de dispositivos</h1>
+<div class="container py-4">
+    <h1 class="mb-2">Dispositivos IoT del Estadio</h1>
+    <p class="text-muted">
+        Sensores distribuidos en las zonas del Estadio Américo Montanini.
+    </p>
+
+    <div *ngIf="loading" class="alert alert-info">
+        Cargando dispositivos...
+    </div>
+
+    <div *ngIf="error" class="alert alert-danger">
+        {{ error }}
+    </div>
+
+    <div class="row g-3" *ngIf="!loading && devices.length > 0">
+        <div class="col-md-4" *ngFor="let device of devices">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h5 class="card-title">{{ device.name }}</h5>
+                    <p class="card-text mb-1">
+                        <strong>Zona:</strong> {{ device.zone }}
+                    </p>
+                    <p class="card-text mb-1">
+                        <strong>Tipo:</strong> {{ device.deviceType }}
+                    </p>
+                    <p class="card-text mb-1">
+                        <strong>Código:</strong> {{ device.deviceCode }}
+                    </p>
+
+                    <span class="badge" [ngClass]="device.status === 'active' ? 'bg-success' : 'bg-secondary'">
+                        {{ device.status }}
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

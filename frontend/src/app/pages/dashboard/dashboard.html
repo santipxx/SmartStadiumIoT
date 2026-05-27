@@ -1,0 +1,271 @@
+<main class="dashboard-page">
+  <div class="container-fluid px-3 px-lg-4 py-4">
+    <header class="dashboard-heading mb-4">
+      <div>
+        <span class="eyebrow">Central IoT</span>
+        <h1>Smart Stadium Montanini</h1>
+      </div>
+
+      <div class="status-pill">
+        <span
+          class="status-dot"
+          [class.status-dot-running]="simulatorStatus?.running"
+        ></span>
+        <div>
+          <span>Simulador</span>
+          <strong>{{ simulatorStatus?.running ? 'Activo' : 'Detenido' }}</strong>
+        </div>
+      </div>
+    </header>
+
+    <div *ngIf="error" class="alert alert-danger" role="alert">
+      {{ error }}
+    </div>
+
+    <div *ngIf="loading" class="alert alert-info" role="status">
+      Cargando telemetria...
+    </div>
+
+    <section class="row g-3 mb-4">
+      <div class="col-sm-6 col-xl-3">
+        <article class="metric-tile metric-tile-green">
+          <span>Dispositivos activos</span>
+          <strong>{{ activeDevicesCount }}</strong>
+          <small>{{ devices.length }} registrados</small>
+        </article>
+      </div>
+
+      <div class="col-sm-6 col-xl-3">
+        <article class="metric-tile metric-tile-blue">
+          <span>Lecturas cargadas</span>
+          <strong>{{ telemetry.length }}</strong>
+          <small>{{ lastReadingAt ? (lastReadingAt | date: 'shortTime') : 'Sin datos' }}</small>
+        </article>
+      </div>
+
+      <div class="col-sm-6 col-xl-3">
+        <article class="metric-tile metric-tile-orange">
+          <span>Promedio</span>
+          <strong>{{ formatMetricValue(metricAverage) }}</strong>
+          <small>{{ selectedMetricDefinition.label }}</small>
+        </article>
+      </div>
+
+      <div class="col-sm-6 col-xl-3">
+        <article class="metric-tile metric-tile-red">
+          <span>Pico</span>
+          <strong>{{ formatMetricValue(metricPeak) }}</strong>
+          <small>{{ selectedMetricDefinition.label }}</small>
+        </article>
+      </div>
+    </section>
+
+    <div class="row g-4 align-items-stretch">
+      <div class="col-xl-4">
+        <section class="dashboard-panel h-100">
+          <div class="panel-heading">
+            <div>
+              <span class="eyebrow">Simulacion</span>
+              <h2>Control de telemetria</h2>
+            </div>
+          </div>
+
+          <div class="control-state mb-3">
+            <div>
+              <span>Estado actual</span>
+              <strong>{{ simulatorStatus?.running ? 'Transmitiendo' : 'Pausado' }}</strong>
+            </div>
+            <span
+              class="badge"
+              [ngClass]="simulatorStatus?.running ? 'text-bg-success' : 'text-bg-secondary'"
+            >
+              {{ simulatorStatus?.running ? 'ON' : 'OFF' }}
+            </span>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label" for="intervalMs">Intervalo</label>
+            <select
+              id="intervalMs"
+              class="form-select"
+              name="intervalMs"
+              [(ngModel)]="intervalMs"
+              [disabled]="simulatorStatus?.running || simulatorBusy"
+            >
+              <option [ngValue]="5000">5 segundos</option>
+              <option [ngValue]="10000">10 segundos</option>
+              <option [ngValue]="15000">15 segundos</option>
+              <option [ngValue]="30000">30 segundos</option>
+            </select>
+          </div>
+
+          <div class="control-actions">
+            <button
+              type="button"
+              class="btn btn-success"
+              (click)="startSimulator()"
+              [disabled]="simulatorBusy || simulatorStatus?.running"
+            >
+              Iniciar telemetria
+            </button>
+            <button
+              type="button"
+              class="btn btn-outline-danger"
+              (click)="stopSimulator()"
+              [disabled]="simulatorBusy || !simulatorStatus?.running"
+            >
+              Detener
+            </button>
+            <button
+              type="button"
+              class="btn btn-outline-secondary"
+              (click)="sendBatch()"
+              [disabled]="simulatorBusy"
+            >
+              Generar muestra
+            </button>
+          </div>
+
+          <dl class="simulator-details mt-4 mb-0">
+            <div>
+              <dt>Lotes generados</dt>
+              <dd>{{ simulatorStatus?.totalBatches ?? 0 }}</dd>
+            </div>
+            <div>
+              <dt>Lecturas generadas</dt>
+              <dd>{{ simulatorStatus?.totalReadings ?? 0 }}</dd>
+            </div>
+            <div>
+              <dt>Ultimo lote</dt>
+              <dd>
+                {{
+                  simulatorStatus?.lastRunAt
+                    ? (simulatorStatus?.lastRunAt | date: 'shortTime')
+                    : 'Sin ejecucion'
+                }}
+              </dd>
+            </div>
+          </dl>
+
+          <p *ngIf="simulatorStatus?.lastError" class="text-danger small mt-3 mb-0">
+            {{ simulatorStatus?.lastError }}
+          </p>
+        </section>
+      </div>
+
+      <div class="col-xl-8">
+        <section class="dashboard-panel h-100">
+          <div class="panel-heading flex-wrap gap-3">
+            <div>
+              <span class="eyebrow">Analisis</span>
+              <h2>Grafica de telemetria</h2>
+            </div>
+            <span class="last-update">
+              {{ lastUpdated ? (lastUpdated | date: 'shortTime') : 'Sin actualizar' }}
+            </span>
+          </div>
+
+          <form class="row g-3 mb-3">
+            <div class="col-md-6">
+              <label class="form-label" for="selectedDevice">Sensor</label>
+              <select
+                id="selectedDevice"
+                class="form-select"
+                name="selectedDevice"
+                [(ngModel)]="selectedDeviceId"
+                (ngModelChange)="onDeviceChange()"
+              >
+                <option value="all">Todos los sensores</option>
+                <option
+                  *ngFor="let device of devices; trackBy: trackDevice"
+                  [value]="device.id"
+                >
+                  {{ device.name }}
+                </option>
+              </select>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label" for="selectedMetric">Dato</label>
+              <select
+                id="selectedMetric"
+                class="form-select"
+                name="selectedMetric"
+                [(ngModel)]="selectedMetric"
+                (ngModelChange)="onMetricChange()"
+              >
+                <option
+                  *ngFor="let metric of metrics"
+                  [ngValue]="metric.key"
+                >
+                  {{ metric.label }} ({{ metric.unit }})
+                </option>
+              </select>
+            </div>
+          </form>
+
+          <div class="chart-shell">
+            <apx-chart
+              [series]="chartOptions.series"
+              [chart]="chartOptions.chart"
+              [colors]="chartOptions.colors"
+              [dataLabels]="chartOptions.dataLabels"
+              [grid]="chartOptions.grid"
+              [legend]="chartOptions.legend"
+              [markers]="chartOptions.markers"
+              [noData]="chartOptions.noData"
+              [stroke]="chartOptions.stroke"
+              [tooltip]="chartOptions.tooltip"
+              [xaxis]="chartOptions.xaxis"
+              [yaxis]="chartOptions.yaxis"
+            ></apx-chart>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <section class="dashboard-panel mt-4">
+      <div class="panel-heading">
+        <div>
+          <span class="eyebrow">Lecturas</span>
+          <h2>Ultimos registros</h2>
+        </div>
+      </div>
+
+      <div class="table-responsive telemetry-table">
+        <table class="table align-middle mb-0">
+          <thead>
+            <tr>
+              <th>Hora</th>
+              <th>Sensor</th>
+              <th>Dato seleccionado</th>
+              <th>Puerta</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              *ngFor="let reading of latestTableReadings; trackBy: trackReading"
+            >
+              <td>{{ reading.createdAt | date: 'shortTime' }}</td>
+              <td>{{ getDeviceName(reading) }}</td>
+              <td>{{ getMetricValue(reading) }}</td>
+              <td>
+                <span
+                  class="badge"
+                  [ngClass]="reading.doorStatus === 'open' ? 'text-bg-warning' : 'text-bg-light'"
+                >
+                  {{ reading.doorStatus ?? 'N/A' }}
+                </span>
+              </td>
+            </tr>
+            <tr *ngIf="latestTableReadings.length === 0">
+              <td colspan="4" class="text-center text-muted py-4">
+                Sin registros para mostrar
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+</main>

@@ -1,0 +1,129 @@
+<main class="assistant-page">
+  <div class="container-fluid px-3 px-lg-4 py-4">
+    <header class="assistant-heading mb-4">
+      <div>
+        <span class="eyebrow">Asistente IA</span>
+        <h1>Consulta guiada de telemetria</h1>
+      </div>
+
+      <div class="heading-actions">
+        <button type="button" class="btn btn-outline-secondary" (click)="refreshData()">
+          Actualizar datos
+        </button>
+        <button type="button" class="btn btn-success" (click)="restart()">
+          Nueva consulta
+        </button>
+      </div>
+    </header>
+
+    <div *ngIf="error" class="alert alert-danger" role="alert">
+      {{ error }}
+    </div>
+
+    <div *ngIf="loading" class="alert alert-info" role="status">
+      Cargando informacion del estadio...
+    </div>
+
+    <div class="row g-4">
+      <div class="col-xl-5">
+        <section class="assistant-panel chat-panel">
+          <div class="panel-heading">
+            <span class="eyebrow">Chatbot</span>
+            <h2>Opciones predefinidas</h2>
+          </div>
+
+          <div class="chat-window">
+            <article
+              *ngFor="let message of messages; trackBy: trackMessage"
+              class="chat-message"
+              [ngClass]="message.sender === 'assistant' ? 'assistant-message' : 'user-message'"
+            >
+              {{ message.text }}
+            </article>
+          </div>
+
+          <div class="option-grid" *ngIf="options.length > 0">
+            <button
+              type="button"
+              class="option-button"
+              *ngFor="let option of options; trackBy: trackOption"
+              (click)="selectOption(option)"
+            >
+              {{ option.label }}
+            </button>
+          </div>
+
+          <div class="empty-options" *ngIf="options.length === 0 && resultReady">
+            <span>Consulta lista</span>
+            <button type="button" class="btn btn-sm btn-outline-secondary" (click)="restart()">
+              Hacer otra
+            </button>
+          </div>
+        </section>
+      </div>
+
+      <div class="col-xl-7">
+        <section class="assistant-panel result-panel">
+          <div class="panel-heading">
+            <span class="eyebrow">Resultado</span>
+            <h2>Grafica solicitada</h2>
+          </div>
+
+          <div class="placeholder-state" *ngIf="!resultReady">
+            <strong>Sin consulta activa</strong>
+            <span>Responde las opciones del chat para construir una grafica.</span>
+          </div>
+
+          <ng-container *ngIf="resultReady">
+            <section class="result-summary">
+              <article>
+                <span>Alcance</span>
+                <strong>{{ scopeLabel }}</strong>
+              </article>
+              <article>
+                <span>Rango</span>
+                <strong>{{ selectedRangeLabel }}</strong>
+              </article>
+              <article>
+                <span>Dato</span>
+                <strong>{{ selectedMetricDefinition.label }}</strong>
+              </article>
+            </section>
+
+            <section class="result-summary mt-3">
+              <article>
+                <span>Lecturas</span>
+                <strong>{{ filteredReadings.length }}</strong>
+              </article>
+              <article>
+                <span>Promedio</span>
+                <strong>{{ formatValue(averageValue) }}</strong>
+              </article>
+              <article>
+                <span>Pico</span>
+                <strong>{{ formatValue(peakValue) }}</strong>
+              </article>
+            </section>
+
+            <div class="chart-shell mt-3">
+              <apx-chart
+                [series]="chartOptions.series"
+                [chart]="chartOptions.chart"
+                [colors]="chartOptions.colors"
+                [dataLabels]="chartOptions.dataLabels"
+                [grid]="chartOptions.grid"
+                [legend]="chartOptions.legend"
+                [markers]="chartOptions.markers"
+                [noData]="chartOptions.noData"
+                [stroke]="chartOptions.stroke"
+                [tooltip]="chartOptions.tooltip"
+                [xaxis]="chartOptions.xaxis"
+                [yaxis]="chartOptions.yaxis"
+              ></apx-chart>
+            </div>
+          </ng-container>
+        </section>
+      </div>
+    </div>
+  </div>
+</main>

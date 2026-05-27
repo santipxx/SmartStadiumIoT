@@ -1,0 +1,52 @@
+<section class="login-page">
+  <div class="login-shell">
+    <div class="login-brand">
+      <span class="eyebrow">Smart Stadium Montanini</span>
+      <h1>Central IoT</h1>
+      <p>Acceso de operador para visualizar sensores, alertas y control remoto.</p>
+    </div>
+
+    <form class="login-card" (ngSubmit)="login()">
+      <div class="mb-4">
+        <span class="eyebrow">Ingreso</span>
+        <h2>Iniciar sesion</h2>
+      </div>
+
+      <div *ngIf="error" class="alert alert-danger">
+        {{ error }}
+      </div>
+
+      <div class="mb-3">
+        <label for="username" class="form-label">Usuario</label>
+        <input
+          id="username"
+          name="username"
+          type="text"
+          class="form-control"
+          autocomplete="username"
+          [(ngModel)]="username"
+        />
+      </div>
+
+      <div class="mb-3">
+        <label for="password" class="form-label">Contrasena</label>
+        <input
+          id="password"
+          name="password"
+          type="password"
+          class="form-control"
+          autocomplete="current-password"
+          [(ngModel)]="password"
+        />
+      </div>
+
+      <button type="submit" class="btn btn-primary w-100">
+        Entrar
+      </button>
+
+      <div class="demo-credentials">
+        admin / admin123
+      </div>
+    </form>
+  </div>
+</section>

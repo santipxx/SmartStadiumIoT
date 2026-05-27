@@ -1,0 +1,397 @@
+<section class="commands-page">
+  <div class="container py-4">
+    <div class="commands-heading mb-4">
+      <div>
+        <span class="eyebrow">Retrocontrol IoT</span>
+        <h1>Control de sensores</h1>
+      </div>
+
+      <div
+        class="status-pill"
+        [ngClass]="simulatorStatus?.running ? 'status-pill-running' : ''"
+      >
+        <span class="status-dot" [ngClass]="simulatorStatus?.running ? 'status-dot-running' : ''"></span>
+        <div>
+          <span>Telemetria</span>
+          <strong>{{ simulatorStatus?.running ? 'En vivo' : 'Detenida' }}</strong>
+          <small>{{ liveStatusText }}</small>
+        </div>
+      </div>
+    </div>
+
+    <div *ngIf="error" class="alert alert-danger">
+      {{ error }}
+    </div>
+
+    <div *ngIf="success" class="alert alert-success">
+      {{ success }}
+    </div>
+
+    <div class="row g-3 mb-4">
+      <div class="col-md-3">
+        <div class="summary-tile summary-green">
+          <span>Sensores activos</span>
+          <strong>{{ activeDevicesCount }}</strong>
+          <small>{{ liveStatusText }}</small>
+        </div>
+      </div>
+
+      <div class="col-md-3">
+        <div class="summary-tile summary-orange">
+          <span>Pausados o mantenimiento</span>
+          <strong>{{ pausedDevicesCount }}</strong>
+          <small>Fuera del envio automatico</small>
+        </div>
+      </div>
+
+      <div class="col-md-3">
+        <div
+          class="summary-tile summary-teal"
+          [ngClass]="latestReadingPulse ? 'summary-pulse' : ''"
+        >
+          <span>Lecturas generadas</span>
+          <strong>{{ simulatorStatus?.totalReadings || 0 }}</strong>
+          <small>Ultimo envio: {{ lastRunLabel }}</small>
+        </div>
+      </div>
+
+      <div class="col-md-3">
+        <div class="summary-tile summary-blue">
+          <span>Objetivo actual</span>
+          <strong>{{ simulatorStatus?.targetDeviceIds?.length || 'Todos' }}</strong>
+          <small>{{ simulatorTargetLabel }}</small>
+        </div>
+      </div>
+    </div>
+
+    <div *ngIf="loading" class="alert alert-info">
+      Cargando control de sensores...
+    </div>
+
+    <div *ngIf="!loading && devices.length === 0" class="alert alert-warning">
+      No hay dispositivos registrados para controlar.
+    </div>
+
+    <div class="row g-4" *ngIf="!loading && devices.length > 0">
+      <div class="col-lg-7">
+        <div class="commands-panel">
+          <div class="panel-heading">
+            <div>
+              <span class="eyebrow">Sensor seleccionado</span>
+              <h2>Recalibrar y modificar parametros</h2>
+            </div>
+          </div>
+
+          <div class="row g-3">
+            <div class="col-md-7">
+              <label for="selectedDeviceId" class="form-label">Dispositivo</label>
+              <select
+                id="selectedDeviceId"
+                name="selectedDeviceId"
+                class="form-select"
+                [(ngModel)]="selectedDeviceId"
+              >
+                <option
+                  *ngFor="let device of devices; trackBy: trackDevice"
+                  [value]="device.id"
+                >
+                  {{ device.name }} - {{ device.zone }}
+                </option>
+              </select>
+            </div>
+
+            <div class="col-md-5" *ngIf="selectedDevice as device">
+              <div class="device-state">
+                <span>Estado actual</span>
+                <strong>{{ device.deviceCode }}</strong>
+                <span class="badge mt-2" [ngClass]="statusClass(device.status)">
+                  {{ device.status }}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div class="row g-3 mt-2">
+            <div class="col-md-5">
+              <label for="selectedMetric" class="form-label">Dato / variable</label>
+              <select
+                id="selectedMetric"
+                name="selectedMetric"
+                class="form-select"
+                [(ngModel)]="selectedMetric"
+                (ngModelChange)="onMetricChange()"
+              >
+                <option
+                  *ngFor="let metric of metrics"
+                  [ngValue]="metric.key"
+                >
+                  {{ metric.label }} ({{ metric.unit }})
+                </option>
+              </select>
+            </div>
+
+            <div class="col-md-3">
+              <label for="calibrationOffset" class="form-label">Ajuste</label>
+              <input
+                id="calibrationOffset"
+                name="calibrationOffset"
+                type="number"
+                class="form-control"
+                [(ngModel)]="calibrationOffset"
+              />
+            </div>
+
+            <div class="col-md-4">
+              <label for="parameterValue" class="form-label">Nuevo parametro</label>
+              <input
+                id="parameterValue"
+                name="parameterValue"
+                type="number"
+                class="form-control"
+                [(ngModel)]="parameterValue"
+              />
+            </div>
+          </div>
+
+          <div class="config-state mt-3">
+            <div>
+              <span>Offset activo</span>
+              <strong>
+                {{
+                  selectedMetricOffset === null
+                    ? 'Sin ajuste'
+                    : selectedMetricOffset + ' ' + selectedMetricDefinition.unit
+                }}
+              </strong>
+            </div>
+
+            <div>
+              <span>Parametro activo</span>
+              <strong>
+                {{
+                  selectedMetricOverride === null
+                    ? 'Rango normal'
+                    : selectedMetricOverride + ' ' + selectedMetricDefinition.unit
+                }}
+              </strong>
+            </div>
+          </div>
+
+          <div class="mt-3">
+            <label for="notes" class="form-label">Motivo o nota</label>
+            <textarea
+              id="notes"
+              name="notes"
+              rows="3"
+              class="form-control"
+              [(ngModel)]="notes"
+              placeholder="Ej: temperatura por encima del rango normal en tribuna occidental"
+            ></textarea>
+          </div>
+
+          <div class="command-grid mt-4">
+            <button
+              type="button"
+              class="btn btn-primary"
+              [disabled]="saving"
+              (click)="calibrateSensor()"
+            >
+              Recalibrar sensor
+            </button>
+
+            <button
+              type="button"
+              class="btn btn-outline-primary"
+              [disabled]="saving"
+              (click)="updateParameter()"
+            >
+              Actualizar parametro
+            </button>
+
+            <button
+              type="button"
+              class="btn btn-outline-warning"
+              [disabled]="saving"
+              (click)="setMaintenanceMode()"
+            >
+              Modo mantenimiento
+            </button>
+
+            <button
+              type="button"
+              class="btn btn-outline-danger"
+              [disabled]="saving"
+              (click)="pauseTelemetry()"
+            >
+              Apagar envio del sensor
+            </button>
+
+            <button
+              type="button"
+              class="btn btn-outline-success"
+              [disabled]="saving"
+              (click)="resumeTelemetry()"
+            >
+              Reanudar envio
+            </button>
+
+            <button
+              type="button"
+              class="btn btn-outline-secondary"
+              [disabled]="saving"
+              (click)="resetSensorConfig()"
+            >
+              Reiniciar configuracion
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-5">
+        <div class="commands-panel h-100">
+          <div class="panel-heading">
+            <div>
+              <span class="eyebrow">Envio de datos</span>
+              <h2>Objetivo del simulador</h2>
+            </div>
+          </div>
+
+          <dl class="simulator-details">
+            <div>
+              <dt>Estado</dt>
+              <dd>{{ simulatorStatus?.running ? 'Activo' : 'Detenido' }}</dd>
+            </div>
+            <div>
+              <dt>Intervalo</dt>
+              <dd>{{ simulatorStatus?.intervalMs || intervalMs }} ms</dd>
+            </div>
+            <div>
+              <dt>Lecturas generadas</dt>
+              <dd>{{ simulatorStatus?.totalReadings || 0 }}</dd>
+            </div>
+            <div>
+              <dt>Ultimo envio</dt>
+              <dd>{{ lastRunLabel }}</dd>
+            </div>
+            <div>
+              <dt>Proximo lote</dt>
+              <dd>{{ nextRunLabel }}</dd>
+            </div>
+            <div>
+              <dt>Enviando a</dt>
+              <dd>{{ simulatorTargetLabel }}</dd>
+            </div>
+            <div>
+              <dt>Estado actualizado</dt>
+              <dd>{{ statusUpdatedLabel }}</dd>
+            </div>
+          </dl>
+
+          <label for="intervalMs" class="form-label mt-3">Intervalo de envio</label>
+          <input
+            id="intervalMs"
+            name="intervalMs"
+            type="number"
+            class="form-control"
+            min="3000"
+            max="60000"
+            step="1000"
+            [(ngModel)]="intervalMs"
+          />
+
+          <div class="simulator-actions mt-4">
+            <button
+              type="button"
+              class="btn btn-success"
+              [disabled]="simulatorBusy"
+              (click)="startSimulator()"
+            >
+              Iniciar telemetria
+            </button>
+
+            <button
+              type="button"
+              class="btn btn-outline-secondary"
+              [disabled]="simulatorBusy"
+              (click)="sendBatch()"
+            >
+              Enviar muestra
+            </button>
+
+            <button
+              type="button"
+              class="btn btn-outline-danger"
+              [disabled]="simulatorBusy"
+              (click)="stopSimulator()"
+            >
+              Detener todo
+            </button>
+
+            <button
+              type="button"
+              class="btn btn-dark"
+              [disabled]="simulatorBusy"
+              (click)="focusSimulatorOnDevice()"
+            >
+              Enviar solo a este sensor
+            </button>
+
+            <button
+              type="button"
+              class="btn btn-outline-dark"
+              [disabled]="simulatorBusy"
+              (click)="clearSimulatorTargets()"
+            >
+              Enviar a todos los activos
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="commands-panel mt-4" *ngIf="!loading">
+      <div class="panel-heading">
+        <div>
+          <span class="eyebrow">Auditoria</span>
+          <h2>Historial de comandos</h2>
+        </div>
+        <button type="button" class="btn btn-sm btn-outline-secondary" (click)="loadControlCenter()">
+          Actualizar
+        </button>
+      </div>
+
+      <div class="table-responsive" *ngIf="commandHistory.length > 0; else emptyCommands">
+        <table class="table align-middle commands-table mb-0">
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Sensor</th>
+              <th>Comando</th>
+              <th>Parametros</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let command of commandHistory; trackBy: trackCommand">
+              <td>{{ formatDate(command.createdAt) }}</td>
+              <td>{{ command.device?.name || deviceName(command.deviceId) }}</td>
+              <td>{{ commandLabel(command.command) }}</td>
+              <td>{{ formatCommandValue(command.value) }}</td>
+              <td>
+                <span class="badge" [ngClass]="commandStatusClass(command.status)">
+                  {{ command.status }}
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <ng-template #emptyCommands>
+        <div class="empty-state">
+          Todavia no hay comandos registrados.
+        </div>
+      </ng-template>
+    </div>
+  </div>
+</section>

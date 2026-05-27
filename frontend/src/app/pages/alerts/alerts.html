@@ -1,0 +1,275 @@
+<main class="alerts-page">
+  <div class="container-fluid px-3 px-lg-4 py-4">
+    <header class="alerts-heading mb-4">
+      <div>
+        <span class="eyebrow">Monitoreo</span>
+        <h1>Alertas inteligentes</h1>
+      </div>
+      <button type="button" class="btn btn-outline-secondary" (click)="loadAlerts()">
+        Actualizar
+      </button>
+    </header>
+
+    <div *ngIf="error" class="alert alert-danger" role="alert">
+      {{ error }}
+    </div>
+
+    <div *ngIf="success" class="alert alert-success" role="status">
+      {{ success }}
+    </div>
+
+    <div *ngIf="loading" class="alert alert-info" role="status">
+      Cargando alertas...
+    </div>
+
+    <section class="row g-3 mb-4">
+      <div class="col-md-4">
+        <article class="summary-tile summary-green">
+          <span>Reglas activas</span>
+          <strong>{{ activeRulesCount }}</strong>
+          <small>{{ rules.length }} configuradas</small>
+        </article>
+      </div>
+      <div class="col-md-4">
+        <article class="summary-tile summary-orange">
+          <span>Alertas recientes</span>
+          <strong>{{ alerts.length }}</strong>
+          <small>Ultimos eventos generados</small>
+        </article>
+      </div>
+      <div class="col-md-4">
+        <article class="summary-tile summary-red">
+          <span>Criticas</span>
+          <strong>{{ criticalAlertsCount }}</strong>
+          <small>Requieren atencion rapida</small>
+        </article>
+      </div>
+    </section>
+
+    <div class="row g-4">
+      <div class="col-xl-4">
+        <section class="alerts-panel h-100">
+          <div class="panel-heading">
+            <span class="eyebrow">Nueva regla</span>
+            <h2>Condicion de alerta</h2>
+          </div>
+
+          <form class="rule-form" (ngSubmit)="createRule()">
+            <div>
+              <label class="form-label" for="ruleName">Nombre</label>
+              <input
+                id="ruleName"
+                class="form-control"
+                name="ruleName"
+                placeholder="Temperatura alta en tribuna"
+                [(ngModel)]="form.name"
+              />
+            </div>
+
+            <div>
+              <label class="form-label" for="deviceId">Sensor</label>
+              <select
+                id="deviceId"
+                class="form-select"
+                name="deviceId"
+                [(ngModel)]="form.deviceId"
+              >
+                <option value="all">Todos los sensores</option>
+                <option
+                  *ngFor="let device of devices; trackBy: trackDevice"
+                  [value]="device.id"
+                >
+                  {{ device.name }}
+                </option>
+              </select>
+            </div>
+
+            <div>
+              <label class="form-label" for="metric">Dato</label>
+              <select
+                id="metric"
+                class="form-select"
+                name="metric"
+                [(ngModel)]="form.metric"
+                (ngModelChange)="onMetricChange()"
+              >
+                <option *ngFor="let metric of metrics" [value]="metric.key">
+                  {{ metric.label }} ({{ metric.unit }})
+                </option>
+              </select>
+            </div>
+
+            <div class="row g-3">
+              <div class="col-md-7">
+                <label class="form-label" for="operator">Operador</label>
+                <select
+                  id="operator"
+                  class="form-select"
+                  name="operator"
+                  [(ngModel)]="form.operator"
+                >
+                  <option
+                    *ngFor="let operator of operators"
+                    [value]="operator.value"
+                  >
+                    {{ operator.label }}
+                  </option>
+                </select>
+              </div>
+
+              <div class="col-md-5">
+                <label class="form-label" for="threshold">Umbral</label>
+                <input
+                  id="threshold"
+                  type="number"
+                  class="form-control"
+                  name="threshold"
+                  [(ngModel)]="form.threshold"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label class="form-label" for="severity">Severidad</label>
+              <select
+                id="severity"
+                class="form-select"
+                name="severity"
+                [(ngModel)]="form.severity"
+              >
+                <option *ngFor="let severity of severities" [value]="severity.value">
+                  {{ severity.label }}
+                </option>
+              </select>
+            </div>
+
+            <div class="form-check form-switch">
+              <input
+                id="enabled"
+                class="form-check-input"
+                type="checkbox"
+                name="enabled"
+                [(ngModel)]="form.enabled"
+              />
+              <label class="form-check-label" for="enabled">
+                Activar regla al crearla
+              </label>
+            </div>
+
+            <button type="submit" class="btn btn-success w-100" [disabled]="saving">
+              Crear regla
+            </button>
+          </form>
+        </section>
+      </div>
+
+      <div class="col-xl-8">
+        <section class="alerts-panel h-100">
+          <div class="panel-heading">
+            <span class="eyebrow">Reglas</span>
+            <h2>Condiciones configuradas</h2>
+          </div>
+
+          <div class="table-responsive rules-table">
+            <table class="table align-middle mb-0">
+              <thead>
+                <tr>
+                  <th>Nombre</th>
+                  <th>Sensor</th>
+                  <th>Condicion</th>
+                  <th>Severidad</th>
+                  <th>Estado</th>
+                  <th class="text-end">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let rule of rules; trackBy: trackRule">
+                  <td class="fw-semibold">{{ rule.name }}</td>
+                  <td>{{ deviceName(rule.deviceId, rule.device) }}</td>
+                  <td>
+                    {{ metricLabel(rule.metric) }}
+                    {{ operatorLabel(rule.operator).toLowerCase() }}
+                    {{ rule.threshold }} {{ metricUnit(rule.metric) }}
+                  </td>
+                  <td>
+                    <span class="badge" [ngClass]="severityClass(rule.severity)">
+                      {{ severityLabel(rule.severity) }}
+                    </span>
+                  </td>
+                  <td>
+                    <span
+                      class="badge"
+                      [ngClass]="rule.enabled ? 'text-bg-success' : 'text-bg-secondary'"
+                    >
+                      {{ rule.enabled ? 'Activa' : 'Pausada' }}
+                    </span>
+                  </td>
+                  <td class="text-end action-buttons">
+                    <button
+                      type="button"
+                      class="btn btn-sm btn-outline-secondary"
+                      (click)="toggleRule(rule)"
+                    >
+                      {{ rule.enabled ? 'Pausar' : 'Activar' }}
+                    </button>
+                    <button
+                      type="button"
+                      class="btn btn-sm btn-outline-danger"
+                      (click)="deleteRule(rule)"
+                    >
+                      Eliminar
+                    </button>
+                  </td>
+                </tr>
+                <tr *ngIf="rules.length === 0">
+                  <td colspan="6" class="text-center text-muted py-4">
+                    No hay reglas configuradas
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <section class="alerts-panel mt-4">
+      <div class="panel-heading">
+        <span class="eyebrow">Eventos</span>
+        <h2>Alertas generadas</h2>
+      </div>
+
+      <div class="table-responsive events-table">
+        <table class="table align-middle mb-0">
+          <thead>
+            <tr>
+              <th>Hora</th>
+              <th>Sensor</th>
+              <th>Tipo</th>
+              <th>Mensaje</th>
+              <th>Severidad</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let alert of recentAlerts; trackBy: trackAlert">
+              <td>{{ alert.createdAt | date: 'short' }}</td>
+              <td>{{ deviceName(alert.deviceId, alert.device) }}</td>
+              <td class="fw-semibold">{{ alert.alertType }}</td>
+              <td>{{ alert.message }}</td>
+              <td>
+                <span class="badge" [ngClass]="severityClass(alert.severity)">
+                  {{ severityLabel(alert.severity) }}
+                </span>
+              </td>
+            </tr>
+            <tr *ngIf="recentAlerts.length === 0">
+              <td colspan="5" class="text-center text-muted py-4">
+                Todavia no hay alertas generadas
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+</main>

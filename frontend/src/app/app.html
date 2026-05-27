@@ -1,0 +1,18 @@
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark px-4" *ngIf="isLoggedIn">
+  <a class="navbar-brand fw-bold" routerLink="/">
+    Smart Stadium Montanini
+  </a>
+
+  <div class="navbar-nav ms-auto align-items-lg-center">
+    <a class="nav-link" routerLink="/">Dashboard</a>
+    <a class="nav-link" routerLink="/devices">Dispositivos</a>
+    <a class="nav-link" routerLink="/alerts">Alertas</a>
+    <a class="nav-link" routerLink="/commands">Control</a>
+    <a class="nav-link" routerLink="/ai-assistant">Asistente IA</a>
+    <button type="button" class="btn btn-sm btn-outline-light ms-lg-3 mt-2 mt-lg-0" (click)="logout()">
+      Salir
+    </button>
+  </div>
+</nav>
+
+<router-outlet></router-outlet>
