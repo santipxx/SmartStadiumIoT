@@ -2,6 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 
+import { API_BASE_URL } from './api-config';
 import { Device } from './devices';
 
 export interface SensorConfig {
@@ -18,7 +19,7 @@ export interface SensorConfig {
   providedIn: 'root',
 })
 export class SensorConfigsService {
-  private readonly apiUrl = 'http://localhost:3000/sensor-configs';
+  private readonly apiUrl = `${API_BASE_URL}/sensor-configs`;
 
   constructor(private readonly http: HttpClient) { }
 

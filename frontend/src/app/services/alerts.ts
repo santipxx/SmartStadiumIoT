@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
+import { API_BASE_URL } from './api-config';
 import { Device } from './devices';
 
 export interface AlertEvent {
@@ -41,7 +42,7 @@ export interface CreateAlertRulePayload {
   providedIn: 'root',
 })
 export class AlertsService {
-  private readonly apiUrl = 'http://localhost:3000/alerts';
+  private readonly apiUrl = `${API_BASE_URL}/alerts`;
 
   constructor(private readonly http: HttpClient) { }
 

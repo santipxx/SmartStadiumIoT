@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
+import { API_BASE_URL } from './api-config';
 import { Device } from './devices';
 
 export interface TelemetryReading {
@@ -35,7 +36,7 @@ export interface SimulatorStatus {
   providedIn: 'root',
 })
 export class TelemetryService {
-  private readonly apiUrl = 'http://localhost:3000';
+  private readonly apiUrl = API_BASE_URL;
 
   constructor(private readonly http: HttpClient) { }
 

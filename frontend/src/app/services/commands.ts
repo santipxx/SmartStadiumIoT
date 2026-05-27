@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
+import { API_BASE_URL } from './api-config';
 import { Device } from './devices';
 
 export interface DeviceCommand {
@@ -25,7 +26,7 @@ export interface CreateCommandPayload {
   providedIn: 'root',
 })
 export class CommandsService {
-  private readonly apiUrl = 'http://localhost:3000/commands';
+  private readonly apiUrl = `${API_BASE_URL}/commands`;
 
   constructor(private readonly http: HttpClient) { }
 
